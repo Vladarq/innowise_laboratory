@@ -100,7 +100,7 @@ while True:
                     print("Error! Invalid input, please enter a number")
 
         case "3":
-            # "Show report (all students)"
+            # Show report (all students)
             print(sep_line)
             print("Show report")
 
@@ -108,12 +108,13 @@ while True:
                 print("There are no students at the moment")
                 continue
 
-            avg_grades: list[int] = []  # list to store all avg grades
+            avg_grades: list[float] = []  # list to store all avg grades
             for student in students:
                 try:
-                    avg: int = sum(student['grades']) / len(student['grades'])
+                    avg: float = round(sum(student['grades']) / len(student['grades']), 2)
                     print(f"{student['name']}'s average grade is {avg}")
                     avg_grades.append(avg)
+
                 except ZeroDivisionError:
                     print(f"{student['name']}'s average grade is N/A")
 
@@ -143,7 +144,7 @@ while True:
                 continue
 
             print(f"Top student: {top_student['name']} "
-                  f"with average grade of {sum(top_student['grades']) / len(top_student['grades'])}")
+                  f"with average grade of {round(sum(top_student['grades']) / len(top_student['grades']), 2)}")
 
         case "5":
             # "Exit"
