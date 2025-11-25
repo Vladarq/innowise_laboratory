@@ -50,6 +50,7 @@ def validate_age(age: int) -> None:
 
 # Get user input
 
+current_age: int = 0
 user_name: str = input("Hey! Enter your full name: ").strip()  # asking user's full name and removing whitespaces
 print("Great! ", end='')
 while True:
