@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from pydantic_models import BookSchema, BookResponse
 from adapter import add, view, search, update, delete
@@ -20,6 +20,7 @@ async def create_book(book: BookSchema) -> BookResponse:
         author=book.author,
         year=book.year
     )
+
     # validate object
     created_book = BookResponse.validate_sqlmodel(obj)
 
@@ -27,14 +28,23 @@ async def create_book(book: BookSchema) -> BookResponse:
 
 
 @router.get("/", response_model=list[BookResponse], status_code=200)
-async def get_all_books() -> list[BookResponse]:
+async def get_all_books(
+        page: int = Query(ge=0, default=0),
+        size: int = Query(ge=1, le=100, default=10)) -> list[BookResponse]:
     """
     Fetches all books
     :return: list of books as Pydantic objects
+    :param page: number of page of list
+    :param size: size of pages
     """
     lst: list = await view()
+
+    # count first element and last element of page
+    first_elem = page * size
+    last_elem = first_elem + size
+
     # validate objects
-    all_books: list[BookResponse | None] = [BookResponse.validate_sqlmodel(book) for book in lst]
+    all_books: list[BookResponse | None] = [BookResponse.validate_sqlmodel(book) for book in lst[first_elem: last_elem]]
 
     return all_books
 
@@ -48,6 +58,7 @@ async def delete_book(book_id: int) -> None:
     :param book_id: id of book to remove
     """
     res: bool | None = await delete(book_id=book_id)
+
     if not res:
         # book id wasn't found, return 404
         raise HTTPException(status_code=404, detail="Book id does not exist")
@@ -65,29 +76,43 @@ async def update_book(book_id: int, book: BookSchema) -> BookResponse:
     :param book: object of new properties for book
     """
     obj = await update(book_id=book_id, new_title=book.title, new_author=book.author, new_year=book.year)
+
     if not obj:
         # book id wasn't found, return 404
         raise HTTPException(status_code=404, detail="Book id does not exist")
+
     else:
-        # serialize with pydentic
+        # serialize with pydantic
         updated_book: BookResponse = BookResponse.validate_sqlmodel(obj)
-        # return 200 and new book
+
         return updated_book
 
 
 @router.get("/search/", response_model=list[BookResponse], status_code=200)
-async def search_book(title: str = None, author: str = None, year: int = None) -> list[BookResponse]:
+async def search_book(
+        page: int = Query(ge=0, default=0),
+        size: int = Query(ge=1, le=100, default=10),
+        title: str = None,
+        author: str = None,
+        year: int = None) -> list[BookResponse]:
     """
     Accepts title, author or / and year and returns objects with given filters.
     You can use that function with one filter, with all filters or without any.
     If no filter given, function work like regular get_all_books, but it's preferable not to use that function that way.
     :return: list of books as Pydantic objects
+    :param page: number of page of list
+    :param size: size of pages
     :param title: title to search
     :param author: author to search
     :param year: year to search
     """
     lst: list = await search(title=title, author=author, year=year)
+
+    # count first element and last element of page
+    first_elem = page * size
+    last_elem = first_elem + size
+
     # make pydantic models from sql models
-    searched_books: list[BookResponse] = [BookResponse.validate_sqlmodel(book) for book in lst]
-    # return 200 and objects list
+    searched_books: list[BookResponse] = [BookResponse.validate_sqlmodel(book) for book in lst[first_elem: last_elem]]
+
     return searched_books
